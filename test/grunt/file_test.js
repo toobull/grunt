@@ -198,10 +198,10 @@ exports['file.expand*'] = {
   'exclusion': function(test) {
     test.expect(8);
     test.deepEqual(grunt.file.expand(['!js/*.js']), [], 'solitary exclusion should match nothing');
-    test.deepEqual(grunt.file.expand(['js/bar.js','!js/bar.js']), [], 'exclusion should cancel match');
+    test.deepEqual(grunt.file.expand(['js/bar.js', '!js/bar.js']), [], 'exclusion should cancel match');
     test.deepEqual(grunt.file.expand(['**/*.js', '!js/foo.js']), ['js/bar.js'], 'should omit single file from matched set');
     test.deepEqual(grunt.file.expand(['!js/foo.js', '**/*.js']), ['js/bar.js', 'js/foo.js'], 'inclusion / exclusion order matters');
-    test.deepEqual(grunt.file.expand(['**/*.js', '**/*.css', '!js/bar.js', '!css/baz.css']), ['js/foo.js','css/qux.css'], 'multiple exclusions should be removed from the set');
+    test.deepEqual(grunt.file.expand(['**/*.js', '**/*.css', '!js/bar.js', '!css/baz.css']), ['js/foo.js', 'css/qux.css'], 'multiple exclusions should be removed from the set');
     test.deepEqual(grunt.file.expand(['**/*.js', '**/*.css', '!**/*.css']), ['js/bar.js', 'js/foo.js'], 'excluded wildcards should be removed from the matched set');
     test.deepEqual(grunt.file.expand(['js/bar.js', 'js/foo.js', 'css/baz.css', 'css/qux.css', '!**/b*.*']), ['js/foo.js', 'css/qux.css'], 'different pattern for exclusion should still work');
     test.deepEqual(grunt.file.expand(['js/bar.js', '!**/b*.*', 'js/foo.js', 'css/baz.css', 'css/qux.css']), ['js/foo.js', 'css/baz.css', 'css/qux.css'], 'inclusion / exclusion order matters');
@@ -249,9 +249,9 @@ exports['file.expandMapping'] = {
 
     var actual = grunt.file.expandMapping(['expand/**/*.txt'], 'dest');
     var expected = [
-      {dest: 'dest/expand/deep/deep.txt', src: 'expand/deep/deep.txt'},
-      {dest: 'dest/expand/deep/deeper/deeper.txt', src: 'expand/deep/deeper/deeper.txt'},
-      {dest: 'dest/expand/deep/deeper/deepest/deepest.txt', src: 'expand/deep/deeper/deepest/deepest.txt'},
+      {dest: 'dest/expand/deep/deep.txt', src: ['expand/deep/deep.txt']},
+      {dest: 'dest/expand/deep/deeper/deeper.txt', src: ['expand/deep/deeper/deeper.txt']},
+      {dest: 'dest/expand/deep/deeper/deepest/deepest.txt', src: ['expand/deep/deeper/deepest/deepest.txt']},
     ];
     test.deepEqual(actual, expected, 'basic src-dest options');
 
@@ -264,39 +264,68 @@ exports['file.expandMapping'] = {
     test.expect(1);
     var actual = grunt.file.expandMapping(['expand/**/*.txt'], 'dest', {flatten: true});
     var expected = [
-      {dest: 'dest/deep.txt', src: 'expand/deep/deep.txt'},
-      {dest: 'dest/deeper.txt', src: 'expand/deep/deeper/deeper.txt'},
-      {dest: 'dest/deepest.txt', src: 'expand/deep/deeper/deepest/deepest.txt'},
+      {dest: 'dest/deep.txt', src: ['expand/deep/deep.txt']},
+      {dest: 'dest/deeper.txt', src: ['expand/deep/deeper/deeper.txt']},
+      {dest: 'dest/deepest.txt', src: ['expand/deep/deeper/deepest/deepest.txt']},
     ];
     test.deepEqual(actual, expected, 'dest paths should be flattened pre-destBase+destPath join');
     test.done();
   },
   'ext': function(test) {
-    test.expect(2);
+    test.expect(3);
     var actual, expected;
     actual = grunt.file.expandMapping(['expand/**/*.txt'], 'dest', {ext: '.foo'});
     expected = [
-      {dest: 'dest/expand/deep/deep.foo', src: 'expand/deep/deep.txt'},
-      {dest: 'dest/expand/deep/deeper/deeper.foo', src: 'expand/deep/deeper/deeper.txt'},
-      {dest: 'dest/expand/deep/deeper/deepest/deepest.foo', src: 'expand/deep/deeper/deepest/deepest.txt'},
+      {dest: 'dest/expand/deep/deep.foo', src: ['expand/deep/deep.txt']},
+      {dest: 'dest/expand/deep/deeper/deeper.foo', src: ['expand/deep/deeper/deeper.txt']},
+      {dest: 'dest/expand/deep/deeper/deepest/deepest.foo', src: ['expand/deep/deeper/deepest/deepest.txt']},
     ];
     test.deepEqual(actual, expected, 'specified extension should be added');
     actual = grunt.file.expandMapping(['expand-mapping-ext/**/file*'], 'dest', {ext: '.foo'});
     expected = [
-      {dest: 'dest/expand-mapping-ext/dir.ectory/file-no-extension.foo', src: 'expand-mapping-ext/dir.ectory/file-no-extension'},
-      {dest: 'dest/expand-mapping-ext/dir.ectory/sub.dir.ectory/file.foo', src: 'expand-mapping-ext/dir.ectory/sub.dir.ectory/file.ext.ension'},
-      {dest: 'dest/expand-mapping-ext/file.foo', src: 'expand-mapping-ext/file.ext.ension'},
+      {dest: 'dest/expand-mapping-ext/dir.ectory/file-no-extension.foo', src: ['expand-mapping-ext/dir.ectory/file-no-extension']},
+      {dest: 'dest/expand-mapping-ext/dir.ectory/sub.dir.ectory/file.foo', src: ['expand-mapping-ext/dir.ectory/sub.dir.ectory/file.ext.ension']},
+      {dest: 'dest/expand-mapping-ext/file.foo', src: ['expand-mapping-ext/file.ext.ension']},
     ];
     test.deepEqual(actual, expected, 'specified extension should be added');
+    actual = grunt.file.expandMapping(['expand/**/*.txt'], 'dest', {ext: ''});
+    expected = [
+      {dest: 'dest/expand/deep/deep', src: ['expand/deep/deep.txt']},
+      {dest: 'dest/expand/deep/deeper/deeper', src: ['expand/deep/deeper/deeper.txt']},
+      {dest: 'dest/expand/deep/deeper/deepest/deepest', src: ['expand/deep/deeper/deepest/deepest.txt']},
+    ];
+    test.deepEqual(actual, expected, 'empty string extension should be added');
+    test.done();
+  },
+  'extDot': function(test) {
+    test.expect(2);
+    var actual, expected;
+
+    actual = grunt.file.expandMapping(['expand-mapping-ext/**/file*'], 'dest', {ext: '.foo', extDot: 'first'});
+    expected = [
+      {dest: 'dest/expand-mapping-ext/dir.ectory/file-no-extension.foo', src: ['expand-mapping-ext/dir.ectory/file-no-extension']},
+      {dest: 'dest/expand-mapping-ext/dir.ectory/sub.dir.ectory/file.foo', src: ['expand-mapping-ext/dir.ectory/sub.dir.ectory/file.ext.ension']},
+      {dest: 'dest/expand-mapping-ext/file.foo', src: ['expand-mapping-ext/file.ext.ension']},
+    ];
+    test.deepEqual(actual, expected, 'extDot of "first" should replace everything after the first dot in the filename.');
+
+    actual = grunt.file.expandMapping(['expand-mapping-ext/**/file*'], 'dest', {ext: '.foo', extDot: 'last'});
+    expected = [
+      {dest: 'dest/expand-mapping-ext/dir.ectory/file-no-extension.foo', src: ['expand-mapping-ext/dir.ectory/file-no-extension']},
+      {dest: 'dest/expand-mapping-ext/dir.ectory/sub.dir.ectory/file.ext.foo', src: ['expand-mapping-ext/dir.ectory/sub.dir.ectory/file.ext.ension']},
+      {dest: 'dest/expand-mapping-ext/file.ext.foo', src: ['expand-mapping-ext/file.ext.ension']},
+    ];
+    test.deepEqual(actual, expected, 'extDot of "last" should replace everything after the last dot in the filename.');
+
     test.done();
   },
   'cwd': function(test) {
     test.expect(1);
     var actual = grunt.file.expandMapping(['**/*.txt'], 'dest', {cwd: 'expand'});
     var expected = [
-      {dest: 'dest/deep/deep.txt', src: 'expand/deep/deep.txt'},
-      {dest: 'dest/deep/deeper/deeper.txt', src: 'expand/deep/deeper/deeper.txt'},
-      {dest: 'dest/deep/deeper/deepest/deepest.txt', src: 'expand/deep/deeper/deepest/deepest.txt'},
+      {dest: 'dest/deep/deep.txt', src: ['expand/deep/deep.txt']},
+      {dest: 'dest/deep/deeper/deeper.txt', src: ['expand/deep/deeper/deeper.txt']},
+      {dest: 'dest/deep/deeper/deepest/deepest.txt', src: ['expand/deep/deeper/deepest/deepest.txt']},
     ];
     test.deepEqual(actual, expected, 'cwd should be stripped from front of destPath, pre-destBase+destPath join');
     test.done();
@@ -311,15 +340,33 @@ exports['file.expandMapping'] = {
       }
     });
     var expected = [
-      {dest: 'dest/expand/o-m-g/deep.txt', src: 'expand/deep/deep.txt'},
-      {dest: 'dest/expand/o-m-g/deeper.txt', src: 'expand/deep/deeper/deeper.txt'},
-      {dest: 'dest/expand/o-m-g/deepest.txt', src: 'expand/deep/deeper/deepest/deepest.txt'},
+      {dest: 'dest/expand/o-m-g/deep.txt', src: ['expand/deep/deep.txt']},
+      {dest: 'dest/expand/o-m-g/deeper.txt', src: ['expand/deep/deeper/deeper.txt']},
+      {dest: 'dest/expand/o-m-g/deepest.txt', src: ['expand/deep/deeper/deepest/deepest.txt']},
     ];
     test.deepEqual(actual, expected, 'custom rename function should be used to build dest, post-flatten');
     test.done();
   },
+  'rename to same dest': function(test) {
+    test.expect(1);
+    var actual = grunt.file.expandMapping(['**/*'], 'dest', {
+      filter: 'isFile',
+      cwd: 'expand',
+      flatten: true,
+      rename: function(destBase, destPath) {
+        return path.join(destBase, 'all' + path.extname(destPath));
+      }
+    });
+    var expected = [
+      {dest: 'dest/all.md', src: ['expand/README.md']},
+      {dest: 'dest/all.css', src: ['expand/css/baz.css', 'expand/css/qux.css']},
+      {dest: 'dest/all.txt', src: ['expand/deep/deep.txt', 'expand/deep/deeper/deeper.txt', 'expand/deep/deeper/deepest/deepest.txt']},
+      {dest: 'dest/all.js', src: ['expand/js/bar.js', 'expand/js/foo.js']},
+    ];
+    test.deepEqual(actual, expected, 'if dest is same for multiple src, create an array of src');
+    test.done();
+  },
 };
-
 
 // Compare two buffers. Returns true if they are equivalent.
 var compareBuffers = function(buf1, buf2) {
@@ -343,19 +390,38 @@ exports['file'] = {
     this.string = 'Ação é isso aí\n';
     this.object = {foo: 'Ação é isso aí', bar: ['ømg', 'pønies']};
     this.writeOption = grunt.option('write');
+
+    // Testing that warnings were displayed.
+    this.oldFailWarnFn = grunt.fail.warn;
+    this.oldLogWarnFn = grunt.log.warn;
+    this.resetWarnCount = function() {
+      this.warnCount = 0;
+    }.bind(this);
+    grunt.fail.warn = grunt.log.warn = function() {
+      this.warnCount += 1;
+    }.bind(this);
+
     done();
   },
   tearDown: function(done) {
     grunt.file.defaultEncoding = this.defaultEncoding;
     grunt.option('write', this.writeOption);
+
+    grunt.fail.warn = this.oldFailWarnFn;
+    grunt.log.warn = this.oldLogWarnFn;
+
     done();
   },
   'read': function(test) {
-    test.expect(5);
+    test.expect(6);
     test.strictEqual(grunt.file.read('test/fixtures/utf8.txt'), this.string, 'file should be read as utf8 by default.');
     test.strictEqual(grunt.file.read('test/fixtures/iso-8859-1.txt', {encoding: 'iso-8859-1'}), this.string, 'file should be read using the specified encoding.');
     test.ok(compareBuffers(grunt.file.read('test/fixtures/octocat.png', {encoding: null}), fs.readFileSync('test/fixtures/octocat.png')), 'file should be read as a buffer if encoding is specified as null.');
+
     test.strictEqual(grunt.file.read('test/fixtures/BOM.txt'), 'foo', 'file should have BOM stripped.');
+    grunt.file.preserveBOM = true;
+    test.strictEqual(grunt.file.read('test/fixtures/BOM.txt'), '\ufeff' + 'foo', 'file should have BOM preserved.');
+    grunt.file.preserveBOM = false;
 
     grunt.file.defaultEncoding = 'iso-8859-1';
     test.strictEqual(grunt.file.read('test/fixtures/iso-8859-1.txt'), this.string, 'changing the default encoding should work.');
@@ -446,12 +512,13 @@ exports['file'] = {
     test.done();
   },
   'copy and process': function(test) {
-    test.expect(13);
+    test.expect(14);
     var tmpfile;
     tmpfile = new Tempfile();
     grunt.file.copy('test/fixtures/utf8.txt', tmpfile.path, {
-      process: function(src, filepath) {
-        test.equal(filepath, 'test/fixtures/utf8.txt', 'filepath should be passed in, as-specified.');
+      process: function(src, srcpath, destpath) {
+        test.equal(srcpath, 'test/fixtures/utf8.txt', 'srcpath should be passed in, as-specified.');
+        test.equal(destpath, tmpfile.path, 'destpath should be passed in, as-specified.');
         test.equal(Buffer.isBuffer(src), false, 'when no encoding is specified, use default encoding and process src as a string');
         test.equal(typeof src, 'string', 'when no encoding is specified, use default encoding and process src as a string');
         return 'føø' + src + 'bår';
@@ -537,6 +604,32 @@ exports['file'] = {
 
     test.done();
   },
+  'copy directory recursively': function(test) {
+    test.expect(34);
+    var copyroot1 = path.join(tmpdir.path, 'copy-dir-1');
+    var copyroot2 = path.join(tmpdir.path, 'copy-dir-2');
+    grunt.file.copy('test/fixtures/expand/', copyroot1);
+    grunt.file.recurse('test/fixtures/expand/', function(srcpath, rootdir, subdir, filename) {
+      var destpath = path.join(copyroot1, subdir || '', filename);
+      test.ok(grunt.file.isFile(srcpath), 'file should have been copied.');
+      test.equal(grunt.file.read(srcpath), grunt.file.read(destpath), 'file contents should be the same.');
+    });
+    grunt.file.mkdir(path.join(copyroot1, 'empty'));
+    grunt.file.mkdir(path.join(copyroot1, 'deep/deeper/empty'));
+    grunt.file.copy(copyroot1, copyroot2, {
+      process: function(contents) {
+        return '<' + contents + '>';
+      },
+    });
+    test.ok(grunt.file.isDir(path.join(copyroot2, 'empty')), 'empty directory should have been created.');
+    test.ok(grunt.file.isDir(path.join(copyroot2, 'deep/deeper/empty')), 'empty directory should have been created.');
+    grunt.file.recurse('test/fixtures/expand/', function(srcpath, rootdir, subdir, filename) {
+      var destpath = path.join(copyroot2, subdir || '', filename);
+      test.ok(grunt.file.isFile(srcpath), 'file should have been copied.');
+      test.equal('<' + grunt.file.read(srcpath) + '>', grunt.file.read(destpath), 'file contents should be processed correctly.');
+    });
+    test.done();
+  },
   'delete': function(test) {
     test.expect(2);
     var oldBase = process.cwd();
@@ -550,12 +643,16 @@ exports['file'] = {
     grunt.file.setBase(oldBase);
     test.done();
   },
+  'delete nonexistent file': function(test) {
+    test.expect(2);
+    this.resetWarnCount();
+    test.ok(!grunt.file.delete('nonexistent'), 'should return false if file does not exist.');
+    test.ok(this.warnCount, 'should issue a warning when deleting non-existent file');
+    test.done();
+  },
   'delete outside working directory': function(test) {
-    test.expect(3);
+    test.expect(4);
     var oldBase = process.cwd();
-    var oldWarn = grunt.fail.warn;
-    grunt.fail.warn = function() {};
-
     var cwd = path.resolve(tmpdir.path, 'delete', 'folder');
     var outsidecwd = path.resolve(tmpdir.path, 'delete', 'outsidecwd');
     grunt.file.mkdir(cwd);
@@ -563,30 +660,31 @@ exports['file'] = {
     grunt.file.setBase(cwd);
 
     grunt.file.write(path.join(outsidecwd, 'test.js'), 'var test;');
+
+    this.resetWarnCount();
     test.equal(grunt.file.delete(path.join(outsidecwd, 'test.js')), false, 'should not delete anything outside the cwd.');
+    test.ok(this.warnCount, 'should issue a warning when deleting outside working directory');
 
     test.ok(grunt.file.delete(path.join(outsidecwd), {force:true}), 'should delete outside cwd when using the --force.');
     test.equal(grunt.file.exists(outsidecwd), false, 'file outside cwd should have been deleted when using the --force.');
 
     grunt.file.setBase(oldBase);
-    grunt.fail.warn = oldWarn;
     test.done();
   },
   'dont delete current working directory': function(test) {
-    test.expect(2);
+    test.expect(3);
     var oldBase = process.cwd();
-    var oldWarn = grunt.fail.warn;
-    grunt.fail.warn = function() {};
-
     var cwd = path.resolve(tmpdir.path, 'dontdelete', 'folder');
     grunt.file.mkdir(cwd);
     grunt.file.setBase(cwd);
 
+    this.resetWarnCount();
     test.equal(grunt.file.delete(cwd), false, 'should not delete the cwd.');
+    test.ok(this.warnCount, 'should issue a warning when trying to delete cwd');
+
     test.ok(grunt.file.exists(cwd), 'the cwd should exist.');
 
     grunt.file.setBase(oldBase);
-    grunt.fail.warn = oldWarn;
     test.done();
   },
   'dont actually delete with no-write option on': function(test) {
@@ -737,4 +835,27 @@ exports['file'] = {
     test.equal(grunt.file.isPathInCwd('nonexistent'), false, 'nonexistent path is not in cwd');
     test.done();
   },
+  'cwdUnderSymlink': {
+    setUp: function(done) {
+      this.cwd = process.cwd();
+      process.chdir(path.join(tmpdir.path, 'expand'));
+      done();
+    },
+    tearDown: function(done) {
+      process.chdir(this.cwd);
+      done();
+    },
+    'isPathCwd': function(test) {
+      test.expect(2);
+      test.ok(grunt.file.isPathCwd(process.cwd()), 'cwd is cwd');
+      test.ok(grunt.file.isPathCwd('.'), 'cwd is cwd');
+      test.done();
+    },
+    'isPathInCwd': function(test) {
+      test.expect(2);
+      test.ok(grunt.file.isPathInCwd('deep'), 'subdirectory is in cwd');
+      test.ok(grunt.file.isPathInCwd(path.resolve('deep')), 'subdirectory is in cwd');
+      test.done();
+    },
+  }
 };
